@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitung Pesangon dan Hari Cuti</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f0f7;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #6a0dad;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            margin-top: 15px;
+            color: #6a0dad;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #6a0dad;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #540a8d;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f3e5f5;
+            border-radius: 8px;
+            font-size: 18px;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .result p {
+            margin: 10px 0;
+        }
+        .formula {
+            font-style: italic;
+            color: #555;
+        }
+        .warning {
+            font-size: 14px;
+            color: #a94442;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hitung Pesangon dan Hari Cuti</h1>
+
+    <label for="start-date">Mulai Kerja</label>
+    <input type="date" id="start-date">
+
+    <label for="end-date">Akhir Kerja</label>
+    <input type="date" id="end-date">
+
+    <label for="avg-salary">Gaji Rata-Rata (6 bulan terakhir)</label>
+    <input type="number" id="avg-salary" placeholder="Masukkan gaji rata-rata">
+
+    <button onclick="calculatePesangon()">Hitung Pesangon</button>
+    <button onclick="calculateCuti()">Hitung Hari Cuti Tahunan</button>
+
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+    function calculatePesangon() {
+        const startDate = new Date(document.getElementById("start-date").value);
+        const endDate = new Date(document.getElementById("end-date").value);
+        const avgSalary = parseFloat(document.getElementById("avg-salary").value);
+        const basicSalary = 27470;
+
+        if (isNaN(startDate) || isNaN(endDate)) {
+            alert("Silakan masukkan tanggal mulai dan tanggal akhir kerja.");
+            return;
+        }
+
+        const salary = isNaN(avgSalary) ? basicSalary : avgSalary;
+
+        const timeDiff = Math.abs(endDate - startDate);
+        const daysWorked = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        const yearsWorked = daysWorked / 365;
+
+        const pesangon = yearsWorked * salary;
+        const formula = isNaN(avgSalary) 
+            ? `Formula: ${yearsWorked.toFixed(2)} tahun x Gaji pokok (27470 NT) = ${pesangon.toFixed(2)} NT`
+            : `Formula: ${yearsWorked.toFixed(2)} tahun x Gaji rata-rata (${salary.toFixed(2)} NT) = ${pesangon.toFixed(2)} NT`;
+        const explanation = isNaN(avgSalary)
+            ? "Karena Anda tidak memasukkan gaji rata-rata, maka perhitungan pesangon menggunakan gaji pokok standar (27470 NT)."
+            : "Perhitungan pesangon menggunakan gaji rata-rata Anda yang dimasukkan.";
+
+        document.getElementById("result").innerHTML = `
+            <p><strong>Pesangon:</strong> ${pesangon.toFixed(2)} NT</p>
+            <p class="formula">${formula}</p>
+            <p>${explanation}</p>
+        `;
+    }
+
+    function calculateCuti() {
+        const startDate = new Date(document.getElementById("start-date").value);
+        const endDate = new Date(document.getElementById("end-date").value);
+
+        if (isNaN(startDate) || isNaN(endDate)) {
+            alert("Silakan masukkan tanggal mulai dan tanggal akhir kerja.");
+            return;
+        }
+
+        const timeDiff = Math.abs(endDate - startDate);
+        const daysWorked = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        const yearsWorked = daysWorked / 365;
+        let totalCuti = 0;
+        let formula = "";
+        let cutiPay = 0;
+        const gajiPerHari = 900;
+
+        if (yearsWorked >= 0.5 && yearsWorked < 1) {
+            totalCuti = 3;
+            formula = "3 hari (untuk masa kerja 6 bulan hingga kurang dari 1 tahun)";
+        } else if (yearsWorked >= 1 && yearsWorked < 2) {
+            totalCuti = 3 + 7;
+            formula = "3 hari + 7 hari (untuk masa kerja 1 hingga kurang dari 2 tahun)";
+        } else if (yearsWorked >= 2 && yearsWorked < 3) {
+            totalCuti = 3 + 7 + 10;
+            formula = "3 hari + 7 hari + 10 hari (untuk masa kerja 2 hingga kurang dari 3 tahun)";
+        } else if (yearsWorked >= 3 && yearsWorked < 5) {
+            totalCuti = 3 + 7 + 10 + 14 * Math.floor(yearsWorked - 2);
+            formula = `3 hari + 7 hari + 10 hari + 14 hari x ${Math.floor(yearsWorked - 2)} tahun (untuk masa kerja 3 hingga kurang dari 5 tahun)`;
+        } else if (yearsWorked >= 5 && yearsWorked < 10) {
+            totalCuti = 3 + 7 + 10 + 14 * 2 + 15 * Math.floor(yearsWorked - 5);
+            formula = `3 hari + 7 hari + 10 hari + 14 hari x 2 tahun + 15 hari x ${Math.floor(yearsWorked - 5)} tahun (untuk masa kerja 5 hingga kurang dari 10 tahun)`;
+        } else if (yearsWorked >= 10) {
+            const additionalDays = Math.min(15 + Math.floor(yearsWorked - 10), 30);
+            totalCuti = 3 + 7 + 10 + 14 * 2 + 15 * 5 + additionalDays;
+            formula = `3 hari + 7 hari + 10 hari + 14 hari x 2 tahun + 15 hari x 5 tahun + ${additionalDays} hari (untuk masa kerja lebih dari 10 tahun)`;
+        }
+
+        cutiPay = totalCuti * gajiPerHari;
+
+        document.getElementById("result").innerHTML = `
+            <p><strong>Total Hari Cuti yang Didapat:</strong> ${totalCuti} hari</p>
+            <p><strong>Gaji untuk Hari Cuti:</strong> ${cutiPay.toFixed(2)} NT</p>
+            <p class="formula">${formula}</p>
+            <p>Total hari cuti adalah akumulasi dari berbagai tahapan masa kerja Anda, sesuai dengan kebijakan cuti tahunan.</p>
+            <p class="warning">Perhatian: Angka gaji per hari untuk cuti tahunan adalah perkiraan. Harap konsultasikan untuk mendapatkan angka yang akurat setiap tahun.</p>
+        `;
+    }
+</script>
+
+</body>
+</html>
