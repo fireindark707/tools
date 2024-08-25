@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catatan Waktu Kerja</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 360px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #673ab7;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+        p.reminder {
+            font-size: 15px;
+            color: #d9534f;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .time-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .time-group select {
+            width: 48%;
+        }
+        #btn-masuk {
+            background-color: #8E20E6;
+        }
+        #btn-pulang {
+            background-color: #E62099;
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .button-group button {
+            width: 100%;
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .button-group button:first-child {
+            margin-top: 0;
+        }
+        .button-group button:hover {
+            background-color: #5a2ea6 !important;
+        }
+        .export-button {
+            margin-top: 20px;
+            background-color: #4caf50;
+            cursor: pointer;
+        }
+        .clear-button {
+            margin-top: 20px;
+            background-color: #f44336;
+            cursor: pointer;
+        }
+        .record-list {
+            margin-top: 30px;
+        }
+        .record-list h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .record-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .record-list li {
+            background-color: #f1f1f1;
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Catatan Waktu Kerja</h1>
+
+    <label for="date-input">Pilih Tanggal</label>
+    <input type="date" id="date-input">
+
+    <label for="time-input">Pilih Waktu</label>
+    <div class="time-group">
+        <select id="hour-input">
+            <option value="" disabled selected>Pilih Jam</option>
+        </select>
+        <select id="minute-input">
+            <option value="" disabled selected>Pilih Menit</option>
+        </select>
+    </div>
+
+    <div class="button-group">
+        <button id="btn-masuk" onclick="logTime('Masuk')">⬆ Catat Waktu Masuk</button>
+        <button id="btn-pulang" onclick="logTime('Pulang')">⬇ Catat Waktu Pulang</button>
+    </div>
+
+    <button class="export-button" onclick="exportRecords()">Export Semua Catatan</button>
+    <button class="clear-button" onclick="confirmClearRecords()">Hapus Semua Catatan</button>
+    
+    <p class="reminder">Jika jam di mesin absensi pabrik sesuai dengan kenyataan, sesuaikan waktu Anda dengan jam yang tertera di mesin absensi (tepat hingga menit). Jika jam di mesin absensi pabrik tidak sesuai dengan kenyataan, masukkan waktu masuk dan pulang kerja Anda yang sebenarnya. Semua catatan absensi sangat penting karena jika terjadi perselisihan, majikan mungkin tidak bersedia memberikan catatan absensi Anda.</p>
+
+    <div class="record-list">
+        <h2>10 Catatan Terakhir</h2>
+        <ul id="record-list"></ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById("date-input");
+        dateInput.value = today;
+        dateInput.max = today; // Prevent future dates
+
+        // Populate hour and minute select elements
+        const hourSelect = document.getElementById("hour-input");
+        const minuteSelect = document.getElementById("minute-input");
+
+        for (let i = 0; i < 24; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i.toString().padStart(2, '0');
+            hourSelect.appendChild(option);
+        }
+
+        for (let i = 0; i < 60; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i.toString().padStart(2, '0');
+            minuteSelect.appendChild(option);
+        }
+
+        displayRecentRecords();
+
+    });
+
+    function logTime(type) {
+        const date = document.getElementById("date-input").value;
+        const hour = document.getElementById("hour-input").value;
+        const minute = document.getElementById("minute-input").value;
+        const time = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+        const recordTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }).replace(',', ' ');
+
+        if (date === "" || hour === "" || minute === "") {
+            alert("Silakan pilih tanggal, jam, dan menit.");
+            return;
+        }
+
+        // Get existing records from localStorage
+        let records = JSON.parse(localStorage.getItem("records")) || [];
+
+        // 如果是“Pulang”类型，检查是否已经有“Masuk”记录
+        if (type === "Pulang") {
+            const masukRecord = records.find(record => record.date === date && record.type === "Masuk");
+            if (!masukRecord) {
+                alert("Silakan catat waktu masuk terlebih dahulu.");
+                return;
+            }
+
+            // 检查Pulang时间是否早于Masuk时间
+            if (time < masukRecord.time) {
+                alert("Waktu pulang tidak boleh lebih awal dari waktu masuk.");
+                return;
+            }
+        }
+
+        // 如果是“Masuk”类型，检查是否早於“Pulang”类型
+        if (type === "Masuk") {
+            const pulangRecord = records.find(record => record.date === date && record.type === "Pulang");
+
+            // 检查Masuk时间是否早于Pulang
+            if (pulangRecord && time > pulangRecord.time) {
+                alert("Waktu masuk tidak boleh lebih lembat dari waktu pulang.");
+                return;
+            }
+
+
+        }
+
+        // Check if there is already a record for this date and type
+        const existingRecordIndex = records.findIndex(record => record.date === date && record.type === type);
+        if (existingRecordIndex !== -1) {
+            // Replace the existing record
+            records[existingRecordIndex].time = time;
+            records[existingRecordIndex].recordTime = recordTime; // 更新记录时间
+        } else {
+            // Add new record
+            records.push({
+                type: type,
+                time: time,
+                date: date,
+                recordTime: recordTime // 记录时间
+            });
+        }
+
+        // Save back to localStorage
+        localStorage.setItem("records", JSON.stringify(records));
+
+        alert(`Waktu ${type} dicatat: ${time} pada ${date}`);
+        displayRecentRecords();
+    }
+
+    function displayRecentRecords() {
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+        const recentRecords = records.slice(-10).reverse(); // Get the last 10 records
+        const recordList = document.getElementById("record-list");
+        recordList.innerHTML = "";
+
+        recentRecords.forEach(record => {
+            const listItem = document.createElement("li");
+            listItem.textContent = `${record.date} - ${record.type}: ${record.time}`;
+            recordList.appendChild(listItem);
+        });
+    }
+
+    function exportRecords() {
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+
+        if (records.length === 0) {
+            alert("Tidak ada catatan untuk diekspor.");
+            return;
+        }
+
+        // Sort records by date before exporting
+        records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const csvContent = "Tanggal,Waktu,Masuk/Pulang,Waktu Record\n" +
+            records.map(record => `${record.date},${record.time},${record.type},${record.recordTime}`).join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "catatan_waktu_kerja.csv";
+        link.click();
+        }
+
+    function confirmClearRecords() {
+        const confirmed = confirm("PERHATIAN: Menghapus semua catatan adalah tindakan yang sangat berbahaya dan tidak dapat dikembalikan. Apakah Anda yakin ingin melanjutkan?");
+        if (confirmed) {
+            clearRecords();
+        }
+    }
+
+    function clearRecords() {
+        localStorage.removeItem("records");
+        alert("Semua catatan telah dihapus.");
+        displayRecentRecords(); // Update the displayed records list
+    }
+    </script>
+</body>
+</html>
